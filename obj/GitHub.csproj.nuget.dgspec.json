@@ -1,17 +1,17 @@
 {
   "format": 1,
   "restore": {
-    "/home/daniel/Projects/GitHub/GitHub.csproj": {}
+    "/home/daniel/Projects/GitHub/advertising-platforms/GitHub.csproj": {}
   },
   "projects": {
-    "/home/daniel/Projects/GitHub/GitHub.csproj": {
+    "/home/daniel/Projects/GitHub/advertising-platforms/GitHub.csproj": {
       "version": "1.0.0",
       "restore": {
-        "projectUniqueName": "/home/daniel/Projects/GitHub/GitHub.csproj",
+        "projectUniqueName": "/home/daniel/Projects/GitHub/advertising-platforms/GitHub.csproj",
         "projectName": "GitHub",
-        "projectPath": "/home/daniel/Projects/GitHub/GitHub.csproj",
+        "projectPath": "/home/daniel/Projects/GitHub/advertising-platforms/GitHub.csproj",
         "packagesPath": "/home/daniel/.nuget/packages/",
-        "outputPath": "/home/daniel/Projects/GitHub/obj/",
+        "outputPath": "/home/daniel/Projects/GitHub/advertising-platforms/obj/",
         "projectStyle": "PackageReference",
         "configFilePaths": [
           "/home/daniel/.nuget/NuGet/NuGet.Config"

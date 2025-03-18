@@ -1,62 +1,83 @@
-using Microsoft.AspNetCore.Builder;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Extensions.Hosting;
-using System.Collections.Concurrent;
-using System.Linq;
-using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc;
 
 var builder = WebApplication.CreateBuilder(args);
+
+// Добавляем сервисы логирования
+builder.Services.AddLogging(logging => 
+{
+    logging.AddConsole();
+    logging.SetMinimumLevel(LogLevel.Debug);
+});
+
 var app = builder.Build();
 
-// In-memory хранилище рекламных площадок
-ConcurrentDictionary<string, List<string>> adPlatforms = new();
-
-// Метод для загрузки данных из файла
-async Task UploadData(HttpContext context)
+// Включаем логирование всех запросов
+app.Use(async (context, next) =>
 {
-    using var reader = new StreamReader(context.Request.Body);
-    string content = await reader.ReadToEndAsync();
+    var logger = app.Logger;
+    logger.LogInformation($"Request: {context.Request.Method} {context.Request.Path}");
+    await next();
+});
+
+// Инициализация структур данных
+var locationTrie = new Trie();
+var adPlatformTrie = new AdPlatformTrie();
+
+// Загрузка данных для локаций
+app.MapPost("/upload/locations", async ([FromBody] string filePath) =>
+{
+    if (!File.Exists(filePath)) 
+        return Results.BadRequest("Файл не найден");
     
-    adPlatforms.Clear();
-    foreach (var line in content.Split('\n'))
+    locationTrie = new Trie();
+    var lines = await File.ReadAllLinesAsync(filePath);
+    foreach (var line in lines)
     {
-        var parts = line.Split(":");
+        var parts = line.Split(',');
+        if (parts.Length == 2)
+        {
+            locationTrie.Insert(parts[0].Trim(), parts[1].Trim());
+        }
+    }
+    return Results.Ok("Данные локаций загружены успешно");
+});
+
+// Загрузка данных для рекламных платформ
+app.MapPost("/upload/platforms", async (HttpContext context) =>
+{
+    var lines = await context.Request.ReadFromJsonAsync<List<string>>();
+    if (lines == null || !lines.Any()) 
+        return Results.BadRequest("Некорректные данные");
+
+    foreach (var line in lines)
+    {
+        var parts = line.Split(':');
         if (parts.Length != 2) continue;
 
         var platform = parts[0].Trim();
-        var locations = parts[1].Split(",").Select(loc => loc.Trim()).ToList();
-
+        var locations = parts[1].Split(',').Select(loc => loc.Trim());
+        
         foreach (var location in locations)
         {
-            adPlatforms.AddOrUpdate(location, new List<string> { platform }, (key, list) => { list.Add(platform); return list; });
+            adPlatformTrie.AddPlatform(platform, location);
         }
     }
-    
-    await context.Response.WriteAsync("Data uploaded successfully");
-}
+    return Results.Ok("Данные платформ загружены успешно");
+});
 
-// Метод для поиска рекламных площадок по локации
-IResult SearchPlatforms(HttpContext context)
+
+app.MapGet("/search/locations/{location}", (ILogger<Program> logger, string location) =>
 {
-    var location = context.Request.Query["location"].ToString();
-    if (string.IsNullOrEmpty(location)) return Results.BadRequest("Location parameter is required");
+    var results = locationTrie.Search(location);
+    logger.LogInformation($"LOCATIONS SEARCH: {location} => {results.Count} results");
+    return results.Any() ? Results.Ok(results) : Results.NotFound();
+});
 
-    var result = adPlatforms
-        .Where(kvp => location.StartsWith(kvp.Key))
-        .SelectMany(kvp => kvp.Value)
-        .Distinct()
-        .ToList();
-    
-    return Results.Ok(result);
-}
-
-// Маршруты API
-app.MapPost("/upload", UploadData);
-app.MapGet("/search", SearchPlatforms);
-
-
-// Маршруты API
-app.MapPost("/upload", async ([FromBody] string[] lines) => await UploadData(lines));
-app.MapGet("/search", ([FromQuery] string location) => SearchPlatforms(location));
+app.MapGet("/search/platforms/{location}", (ILogger<Program> logger, string location) =>
+{
+    var results = adPlatformTrie.Search(location);
+    logger.LogInformation($"PLATFORMS SEARCH: {location} => {string.Join(", ", results)}");
+    return results.Any() ? Results.Ok(results) : Results.NotFound();
+});
 
 app.Run();

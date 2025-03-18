@@ -108,3 +108,5 @@
 /home/daniel/Projects/GitHub/advertising-platforms/bin/Debug/net9.0/Newtonsoft.Json.Bson.dll
 /home/daniel/Projects/GitHub/advertising-platforms/obj/Debug/net9.0/advertising-platforms.csproj.AssemblyReference.cache
 /home/daniel/Projects/GitHub/advertising-platforms/obj/Debug/net9.0/advertis.9153F81C.Up2Date
+/home/daniel/Projects/GitHub/advertising-platforms/bin/Debug/net9.0/json/data.json
+/home/daniel/Projects/GitHub/advertising-platforms/bin/Debug/net9.0/json/launchSettings.json
